@@ -4,6 +4,7 @@ import com.wzt.spring.framework.annotation.Autowired;
 import com.wzt.spring.framework.annotation.Controller;
 import com.wzt.spring.framework.annotation.RequestMapping;
 import com.wzt.spring.framework.test.service.TestService;
+import com.wzt.spring.framework.webmvc.ModelAndView;
 
 @Controller
 @RequestMapping("/test")
@@ -13,8 +14,8 @@ public class TestController {
     TestService testService;
 
     @RequestMapping("/sayHello")
-    public String helloWorld(){
+    public ModelAndView helloWorld() {
         testService.test();
-       return "helloWorld";
+        return null;
     }
 }
