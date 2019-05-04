@@ -16,15 +16,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class ApplicationContext implements BeanFactory {
+public class ApplicationContext extends DefaultListableBeanFactory implements BeanFactory {
 
     private String[] configLocations;
 
     private BeanDefinitionReader beanDefinitionReader;
-
-
-    //beanDefinitionMap用来保存配置信息
-    private Map<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<>();
 
     //用来保证注册式单例的容器
     private Map<String,Object> beanCahceMap = new HashMap<>();
@@ -220,5 +216,10 @@ public class ApplicationContext implements BeanFactory {
 
     public Properties getConfig(){
         return this.beanDefinitionReader.getConfig();
+    }
+
+    @Override
+    protected void refreshBeanFactory() {
+
     }
 }

@@ -6,6 +6,9 @@ import com.wzt.spring.framework.annotation.RequestMapping;
 import com.wzt.spring.framework.test.service.TestService;
 import com.wzt.spring.framework.webmvc.ModelAndView;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Controller
 @RequestMapping("/test")
 public class TestController {
@@ -15,7 +18,10 @@ public class TestController {
 
     @RequestMapping("/sayHello")
     public ModelAndView helloWorld() {
-        testService.test();
-        return null;
+//        testService.test();
+        Map<String,Object> model = new HashMap<>();
+        model.put("name","kyrie.wu");
+        ModelAndView mv = new ModelAndView("first.html",model);
+        return mv;
     }
 }

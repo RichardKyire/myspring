@@ -17,9 +17,11 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 // Servlet只是作为MVC的入口
@@ -44,12 +46,12 @@ public class DispatchServlet extends HttpServlet {
   @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp)
       throws ServletException, IOException {
-    super.doPost(req, resp);
+    this.doPost(req, resp);
   }
 
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp)
-      throws ServletException, IOException {
+      throws IOException {
     //        doDispatch(req,resp);
     String url = req.getRequestURI();
     String contextPath = req.getContextPath();
@@ -70,6 +72,7 @@ public class DispatchServlet extends HttpServlet {
     try {
       doDispatch(req, resp);
     } catch (Exception e) {
+      e.printStackTrace();
       resp.getWriter()
           .write(
               "500 Exception, Details :\r\n"
@@ -79,25 +82,78 @@ public class DispatchServlet extends HttpServlet {
     }
   }
 
-  private void doDispatch(HttpServletRequest req, HttpServletResponse resp) throws Exception {
+  private void doDispatch(HttpServletRequest req, HttpServletResponse resp) throws IOException, InvocationTargetException, IllegalAccessException {
+
+    //根据用户请求的URL来获得一个Handler
     HandlerMapping handler = getHandler(req);
+
+    if(handler == null){
+      resp.getWriter().write("404 Not Found\r\n @Kyrie.WuSpringMVC");
+      return ;
+    }
 
     HandlerAdapter ha = getHandlerAdapter(handler);
 
+    //这一步只是调用方法，得到返回值
     ModelAndView mv = ha.handle(req, resp, handler);
 
+    //这一步才是真的输出
     processDispatchRequest(resp, mv);
   }
 
-  private void processDispatchRequest(HttpServletResponse resp, ModelAndView mv) {
+  private void processDispatchRequest(HttpServletResponse resp, ModelAndView mv) throws IOException {
+    System.out.println("enter DispatcherServlet.processDispatchRequest()");
     // TODO 调用ViewResovler 的resovleView方法
+    if(null == mv){
+      return ;
+    }
+    if(this.viewResolvers.isEmpty()){
+      System.out.println("viewResolvers is empty");
+      return ;
+    }
+    for(ViewResolver viewResolver : this.viewResolvers){
+
+      System.out.println(String.format("mv.viewNmae[%s],viewResolver.viewName[%s]",mv.getViewName(),viewResolver.getViewName()));
+      if(!mv.getViewName().equals(viewResolver.getViewName())){
+        continue;
+      }
+
+      String out = viewResolver.viewResolver(mv);
+
+      if(out!=null){
+        resp.getWriter().write(out);
+      }
+    }
+
+
+
   }
 
   private HandlerAdapter getHandlerAdapter(HandlerMapping handlerMapping) {
-    return null;
+
+    if(this.handlerAdapters.isEmpty()){
+      return null;
+    }
+    return this.handlerAdapters.get(handlerMapping);
   }
 
   private HandlerMapping getHandler(HttpServletRequest req) {
+
+    if(this.handlerMappings.isEmpty()){
+      return null;
+    }
+
+    String url = req.getRequestURI();
+    String contextPath = req.getContextPath();
+    url = url.replace(contextPath,"").replaceAll("/+","/");
+    for(HandlerMapping handlerMapping : this.handlerMappings){
+      Matcher matcher = handlerMapping.getPattern().matcher(url);
+      if(!matcher.matches()){
+        continue;
+      }
+      return handlerMapping;
+    }
+
     return null;
   }
 
@@ -145,6 +201,7 @@ public class DispatchServlet extends HttpServlet {
     String templateRootPath = this.getClass().getClassLoader().getResource(templateRoot).getFile();
     File templateRootDir = new File(templateRootPath);
     for (File template : templateRootDir.listFiles()) {
+      System.out.println(String.format("add viewResolvers(%s,%s)",template.getName(),template));
       this.viewResolvers.add(new ViewResolver(template.getName(), template));
     }
   }
@@ -184,6 +241,7 @@ public class DispatchServlet extends HttpServlet {
         }
       }
 
+
       this.handlerAdapters.put(handlerMapping, new HandlerAdapter(paramMapping));
     }
   }
@@ -212,8 +270,8 @@ public class DispatchServlet extends HttpServlet {
         if (!method.isAnnotationPresent(RequestMapping.class)) {
           continue;
         }
-        RequestMapping requestMapping = clazz.getAnnotation(RequestMapping.class);
-        String regex = ("/" + baseUrl + requestMapping.value().replaceAll("/+", "/"));
+        RequestMapping methodRequestMapping = method.getAnnotation(RequestMapping.class);
+        String regex = (("/" + baseUrl + methodRequestMapping.value().replaceAll("\\*",".*")).replaceAll("/+", "/"));
         Pattern pattern = Pattern.compile(regex);
         this.handlerMappings.add(new HandlerMapping(pattern, controller, method));
         System.out.println("Mapping: " + regex + "," + method);

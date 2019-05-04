@@ -36,4 +36,8 @@ public class HandlerMapping {
     public void setPattern(Pattern pattern) {
         this.pattern = pattern;
     }
+
+    public Pattern getPattern() {
+        return pattern;
+    }
 }
