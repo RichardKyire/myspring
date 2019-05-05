@@ -3,6 +3,7 @@ package com.wzt.spring.framework.webmvc.servlet;
 import com.wzt.spring.framework.annotation.Controller;
 import com.wzt.spring.framework.annotation.RequestMapping;
 import com.wzt.spring.framework.annotation.RequestParam;
+import com.wzt.spring.framework.aop.AopProxyUtils;
 import com.wzt.spring.framework.context.ApplicationContext;
 import com.wzt.spring.framework.webmvc.HandlerAdapter;
 import com.wzt.spring.framework.webmvc.HandlerMapping;
@@ -164,12 +165,16 @@ public class DispatchServlet extends HttpServlet {
     ApplicationContext applicationContext =
         new ApplicationContext(config.getInitParameter(LOCATION));
 
-    initStrategies(applicationContext);
+    try {
+      initStrategies(applicationContext);
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
 
     super.init(config);
   }
 
-  protected void initStrategies(ApplicationContext context) {
+  protected void initStrategies(ApplicationContext context) throws Exception {
 
     /** 有九种策略 针对每个用户请求，都会经过一些处理的策略之后，最终才能有结果输出 每种资源可以自定义干预，但是最终的结果都是一致 */
     initMultipartResolver(context);
@@ -247,14 +252,16 @@ public class DispatchServlet extends HttpServlet {
   }
 
   // 将Controller中配置的RequestMapping 和Method 进行一一对应
-  private void initHandlerMappings(ApplicationContext context) {
+  private void initHandlerMappings(ApplicationContext context) throws Exception {
+    System.out.println("enter DispatchServlet.initHandlerMappings()");
     // 按照我们通常的理解应该是一个Map
     // Map<String,Method>
 
     // 首先从容器中取到所有的
     String[] beanNames = context.getBeanDefinitionNames();
     for (String beanName : beanNames) {
-      Object controller = context.getBean(beanName);
+      Object proxy = context.getBean(beanName);
+      Object controller = AopProxyUtils.getTargetObject(proxy);
       Class<?> clazz = controller.getClass();
       if (!clazz.isAnnotationPresent(Controller.class)) {
         continue;

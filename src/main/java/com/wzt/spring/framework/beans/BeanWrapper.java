@@ -1,8 +1,12 @@
 package com.wzt.spring.framework.beans;
 
+import com.wzt.spring.framework.aop.AopConfig;
+import com.wzt.spring.framework.aop.AopProxy;
 import com.wzt.spring.framework.core.FactoryBean;
 
 public class BeanWrapper extends FactoryBean {
+
+    private AopProxy aopProxy = new AopProxy();
 
     //还会用到  观察者  模式
     //1、支持事件响应，会有一个监听
@@ -12,7 +16,7 @@ public class BeanWrapper extends FactoryBean {
     //原始的通过反射new出来，要把它包装起来，存下来
     private Object originalInstance;
     public BeanWrapper(Object instance){
-            this.wrappedInstance = instance;
+            this.wrappedInstance = aopProxy.getProxy(instance);
             this.originalInstance = instance;
     }
 
@@ -44,5 +48,9 @@ public class BeanWrapper extends FactoryBean {
 
     public void setOriginalInstance(Object originalInstance) {
         this.originalInstance = originalInstance;
+    }
+
+    public void setAopConfig(AopConfig config){
+        aopProxy.setConfig(config);
     }
 }

@@ -18,7 +18,7 @@ public class TestController {
 
     @RequestMapping("/sayHello")
     public ModelAndView helloWorld() {
-//        testService.test();
+        testService.test();
         Map<String,Object> model = new HashMap<>();
         model.put("name","kyrie.wu");
         ModelAndView mv = new ModelAndView("first.html",model);
